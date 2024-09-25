@@ -1,16 +1,23 @@
 import SwiftUI
 
 struct LoginView: View {
-    @StateObject private var authViewModel = AuthViewModel()
+    @ObservedObject private var loginViewModel = LoginViewModel()
     @State private var path = NavigationPath()
     
+    @State private var showToast = false
+    @State private var toastMessage = ""
+    
+    init(loginViewModel: LoginViewModel) {
+        self.loginViewModel = loginViewModel
+    }
+
     var body: some View {
         NavigationStack(path: $path) {
             ZStack {
                 LinearGradient(
                     gradient: Gradient(colors: [
-                        Color(UIColor(red: 27/255, green: 0/255, blue: 71/255, alpha: 1)),
-                        Color(red: 99/255, green: 0/255, blue: 251/255)
+                        Color(UIColor(named: "StrongPurple") ?? .purple),
+                        Color(UIColor(named: "PurpleNormal") ?? .purple),
                     ]),
                     startPoint: .top,
                     endPoint: .bottom
@@ -30,15 +37,15 @@ struct LoginView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("E-mail")
                                 .font(.headline)
-                                .foregroundColor(Color(red: 93/255, green: 93/255, blue: 93/255))
+                                .foregroundColor(Color(UIColor(named: "StyledLightGray") ?? .gray))
                                 .fontWeight(.regular)
                                 .padding([.leading], 4)
-                            TextField("Email", text: $authViewModel.email)
+                            TextField("Email", text: $loginViewModel.email)
                                 .font(.custom("input-sm", size: 16))
                                 .padding(16)
                                 .background(
                                     RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color(red: 220/255, green: 199/255, blue: 253/255), lineWidth: 3)
+                                        .stroke(Color(UIColor(named: "StyledLightPurple") ?? .purple), lineWidth: 3)
                                 )
                         }
                         
@@ -46,7 +53,7 @@ struct LoginView: View {
                             HStack() {
                                 Text("Senha")
                                     .font(.headline)
-                                    .foregroundColor(Color(red: 93/255, green: 93/255, blue: 93/255))
+                                    .foregroundColor(Color(UIColor(named: "StyledLightGray") ?? .gray))
                                     .fontWeight(.regular)
                                     .padding([.leading], 4)
                                 Spacer()
@@ -58,37 +65,49 @@ struct LoginView: View {
                                     .padding([.leading], 4)
                             }
                             
-                            SecureField("Password", text: $authViewModel.password)
+                            SecureField("Password", text: $loginViewModel.password)
                                 .font(.custom("input-sm", size: 16))
                                 .padding(16)
                                 .background(
                                     RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color(red: 220/255, green: 199/255, blue: 253/255), lineWidth: 3)
+                                        .stroke(Color(UIColor(named: "StyledLightPurple") ?? .purple), lineWidth: 3)
                                 )
                         }
                         
-                        if (authViewModel.errorMessage != nil && authViewModel.isAuthenticating == false) {
-                            Text("E-mail ou senha incorretos")
+                        HStack() {
+                            Text("Lembrar minha senha")
+                                .font(.subheadline)
+                                .foregroundColor(Color(UIColor(named: "StyledLightGray") ?? .gray))
+                                .fontWeight(.regular)
+                                .padding([.leading], 4)
+                            Spacer()
+                            
+                            Toggle("", isOn: $loginViewModel.savePassword)
+                                .toggleStyle(CheckmarkToggleStyle())
+                        }
+                        
+                        if (loginViewModel.errorMessage != nil && loginViewModel.isAuthenticating == false) {
+                            Text(String(loginViewModel.errorMessage ?? "E-mail ou senha incorretos"))
                                 .foregroundColor(.red)
                         }
                         
-                        if authViewModel.isAuthenticating == true {
+                        if loginViewModel.isAuthenticating == true {
                             ProgressView()
                                 .progressViewStyle(CircularProgressViewStyle())
                                 .padding()
                                 .frame(maxWidth: /*@START_MENU_TOKEN@*/.infinity/*@END_MENU_TOKEN@*/, alignment: .center)
                         }
                         
-                        Button(action: authViewModel.loginUser) {
+                        Button(action: loginViewModel.loginUser) {
                             Text("Entrar")
                                 .frame(minWidth: 0, maxWidth: .infinity)
                                 .padding()
                                 .foregroundColor(.white)
-                                .background(Color(red: 99/255, green: 0/255, blue: 251/255))
+                                .background(Color(UIColor(named: "PurpleNormal") ?? .purple))
                                 .cornerRadius(8)
                         }
                         
-                        Button(action: authViewModel.loginUser) {
+                        Button(action: loginViewModel.loginUser) {
                             HStack() {
                                 Image(systemName: "applelogo").foregroundColor(.white)
                                 Text("Continuar com Apple")
@@ -104,11 +123,11 @@ struct LoginView: View {
                         HStack() {
                             Text("Não possui uma conta?")
                                 .font(.headline)
-                                .foregroundColor(Color(red: 93/255, green: 93/255, blue: 93/255))
+                                .foregroundColor(Color(UIColor(named: "StyledLightGray") ?? .gray))
                                 .fontWeight(.regular)
                                 .padding([.leading], 4)
                             
-                            NavigationLink(destination: ContentView()) {
+                            NavigationLink(destination: SignUpView(loginViewModel: loginViewModel)) {
                                 Text("Cadastre-se")
                                     .font(.headline)
                                     .foregroundColor(.blue)
@@ -124,18 +143,28 @@ struct LoginView: View {
                     .background(Color.white)
                     .cornerRadius(30, corners: [.topLeft, .topRight])
                     .shadow(radius: 10)
+                    
+                    ToastView(message: toastMessage, isPresented: $showToast)
+                        .padding(.bottom, 50)
                 }
                 .ignoresSafeArea()
-                .navigationDestination(isPresented: $authViewModel.isAuthenticated) {
+                .navigationDestination(isPresented: $loginViewModel.isAuthenticated) {
                     ContentView()
                 }
             }
         }
+        .navigationBarBackButtonHidden(true)
+        .onReceive(NotificationCenter.default.publisher(for: .registrationSuccessful)) { _ in
+            showToast = true
+            toastMessage = "Cadastro realizado com sucesso!"
+        }
+        .onAppear {
+            if loginViewModel.isSignedUp {
+                showToast = true
+                toastMessage = "Cadastro realizado com sucesso!"
+            }
+        }
     }
-}
-
-#Preview {
-    LoginView()
 }
 
 extension View {
@@ -152,4 +181,30 @@ struct RoundedCorner: Shape {
         let path = UIBezierPath(roundedRect: rect, byRoundingCorners: corners, cornerRadii: CGSize(width: radius, height: radius))
         return Path(path.cgPath)
     }
+}
+
+struct CheckmarkToggleStyle: ToggleStyle {
+    
+    func makeBody(configuration: Configuration) -> some View {
+        HStack {
+            configuration.label
+            Spacer()
+            Rectangle()
+                .foregroundColor(configuration.isOn ? .green : .gray)
+                .frame(width: 51, height: 31, alignment: .center)
+                .overlay(
+                    Circle()
+                        .foregroundColor(.white)
+                        .padding(.all, 3)
+                        .offset(x: configuration.isOn ? 11 : -11, y: 0)
+                        .animation(Animation.easeInOut(duration: 4), value: false)
+                    
+                ).cornerRadius(20)
+                .onTapGesture { configuration.isOn.toggle() }
+        }
+    }
+}
+
+extension Notification.Name {
+    static let registrationSuccessful = Notification.Name("registrationSuccessful")
 }

@@ -1,12 +1,20 @@
 import SwiftUI
 import FirebaseAuth
 
-class AuthViewModel: ObservableObject {
+class LoginViewModel: ObservableObject {
     @Published var email: String = ""
     @Published var password: String = ""
     @Published var rememberLogin = false
     @Published var isAuthenticated = false
+    @Published var isSignedUp = false {
+        didSet {
+            if isSignedUp {
+                NotificationCenter.default.post(name: .registrationSuccessful, object: nil)
+            }
+        }
+    }
     @Published var isAuthenticating = false
+    @Published var savePassword = false
     @Published var errorMessage: String?
     
     func loginUser() {
@@ -15,13 +23,16 @@ class AuthViewModel: ObservableObject {
         FirebaseAuthService.shared.login(email: email, password: password) { [weak self] result in
             DispatchQueue.main.async {
                 switch result {
-                case .success(let user):
+                case .success(_):
                     self?.isAuthenticated = true
                     self?.errorMessage = nil
-                    self?.email = ""
-                    self?.password = ""
-                case .failure(let error):
-                    self?.errorMessage = error.localizedDescription
+                    
+                    if self?.savePassword == false {
+                        self?.email = ""
+                        self?.password = ""
+                    }
+                case .failure(_):
+                    self?.errorMessage = "E-mail ou senha incorreto."
                 }
                 self?.isAuthenticating = false
             }
