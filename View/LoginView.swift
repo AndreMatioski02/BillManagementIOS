@@ -149,7 +149,7 @@ struct LoginView: View {
                 }
                 .ignoresSafeArea()
                 .navigationDestination(isPresented: $loginViewModel.isAuthenticated) {
-                    ContentView()
+                    SegmentListView()
                 }
             }
         }
