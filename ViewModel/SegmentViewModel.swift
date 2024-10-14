@@ -10,6 +10,7 @@ struct Segment: Identifiable {
 
 class SegmentViewModel: ObservableObject {
     @Published var segments: [Segment] = []
+    @Published var segmentById: Segment?
     @Published var showModalEditAndCreate = false
     @Published var showModalDelete = false
     
@@ -27,6 +28,13 @@ class SegmentViewModel: ObservableObject {
         }
     }
 
+    func fetchSegmentById(segmentId: String) {
+        guard let userId = userId else { return }
+        service.getSegmentById(for: userId, segmentId: segmentId) { [weak self] segment in
+            self?.segmentById = segment
+        }
+    }
+    
     func fetchSegments() {
         guard let userId = userId else { return }
         service.getSegments(for: userId) { [weak self] segments in

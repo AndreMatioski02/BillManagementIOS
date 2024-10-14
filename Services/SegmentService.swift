@@ -3,6 +3,34 @@ import FirebaseFirestore
 class SegmentService {
     let db = Firestore.firestore()
 
+    func getSegmentById(for userId: String, segmentId: String, completion: @escaping (Segment?) -> Void) {
+        db.collection("users").document(userId).collection("segments").document(segmentId).getDocument { snapshot, error in
+            if let error = error {
+                print("Error fetching segment: \(error)")
+                completion(nil)
+                return
+            }
+
+            guard let doc = snapshot else {
+                print("Document does not exist")
+                completion(nil)
+                return
+            }
+
+            guard let data = doc.data(),
+                  let title = data["title"] as? String,
+                  let description = data["description"] as? String else {
+                print("Document data is invalid")
+                completion(nil)
+                return
+            }
+
+            let segment = Segment(id: doc.documentID, title: title, description: description)
+            completion(segment)
+        }
+    }
+
+    
     func getSegments(for userId: String, completion: @escaping ([Segment]) -> Void) {
         db.collection("users").document(userId).collection("segments").getDocuments { snapshot, error in
             if let error = error {

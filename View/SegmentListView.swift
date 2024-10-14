@@ -1,7 +1,5 @@
 import SwiftUI
 
-import SwiftUI
-
 struct SegmentListView: View {
     @StateObject private var viewModel = SegmentViewModel()
     @State private var selectedSegment: Segment?
@@ -31,8 +29,8 @@ struct SegmentListView: View {
                 .padding()
                 
                 List(viewModel.segments) { segment in
-                    ZStack {
-                        HStack {
+                    HStack {
+                        NavigationLink(destination: BillListView(segmentId: segment.id)) {
                             VStack(alignment: .leading) {
                                 Text(segment.title)
                                     .font(.headline)
@@ -42,37 +40,32 @@ struct SegmentListView: View {
                                     .lineLimit(1)
                             }
                             .padding(.vertical, 8)
-                            
-                            Spacer()
-                            
-                            Button(action: {}) {
-                                Image(systemName: "pencil")
-                                    .padding()
-                                    .foregroundColor(.blue)
-                            }
-                            .onTapGesture {
-                                selectedSegment = segment
-                                isEditing = true
-                                viewModel.showModalEditAndCreate = true
-                            }
-                            
-                            Button(action: {}) {
-                                Image(systemName: "trash")
-                                    .padding()
-                                    .foregroundColor(.red)
-                            }
-                            .onTapGesture {
-                                segmentId = segment.id
-                                viewModel.showModalDelete = true
-                            }
                         }
+                        .buttonStyle(PlainButtonStyle())
                         .contentShape(Rectangle())
-                        .onTapGesture {
-                            navigateToDetail(segmentId: segment.id)
+                        
+                        Spacer()
+                        
+                        Button(action: {}) {
+                            Image(systemName: "pencil")
+                                .padding()
+                                .foregroundColor(.blue)
+                        }.onTapGesture {
+                            selectedSegment = segment
+                            isEditing = true
+                            viewModel.showModalEditAndCreate = true
+                        }
+                        
+                        Button(action: {}) {
+                            Image(systemName: "trash")
+                                .padding()
+                                .foregroundColor(.red)
+                        }.onTapGesture {
+                            segmentId = segment.id
+                            viewModel.showModalDelete = true
                         }
                     }
                 }
-                
             }
             .sheet(isPresented: $viewModel.showModalEditAndCreate) {
                 CreateOrEditSegmentModalView(
@@ -80,20 +73,17 @@ struct SegmentListView: View {
                     segment: $selectedSegment,
                     isEditing: $isEditing
                 )
-                
             }
-            .sheet(isPresented: $viewModel.showModalDelete) {
-                DeleteModalView(deleteType: "segmento", onConfirm: {
-                    viewModel.deleteSegment(segmentId: segmentId ?? "")
-                }, onCancel: {
-                    viewModel.showModalDelete = false
-                })
-                
+            .alert(isPresented: $viewModel.showModalDelete) {
+                Alert(
+                    title: Text("Excluir segmento"),
+                    message: Text("Tem certeza que deseja excluir este segmento?"),
+                    primaryButton: .destructive(Text("Excluir")) {
+                        viewModel.deleteSegment(segmentId: segmentId ?? "")
+                    },
+                    secondaryButton: .cancel()
+                )
             }
         }
-    }
-    
-    func navigateToDetail(segmentId: String) {
-        print("Navegando para o segmento com ID: \(segmentId)")
     }
 }
